@@ -1,7 +1,9 @@
 import psutil
 import requests
 import pyttsx3
-import sounddevice
+import sounddevice as sd
+import whisper
+
 
 #cpu
 count=0
@@ -224,23 +226,42 @@ for voice in voices:
     print()
 
 
+seconds=4
+sample_rate=16000
+model=whisper.load_model("base",download_root="./whisper_models")
+
+
+
 allowed_apps= [
 "Chrome.exe",
 "msedge.exe",
 "Notepad.exe",
-"Code.exe",
-"llama-server.exe"
-"msmpeng.exe",
-"msedgewebview2.exe"
+"Code.exe"
 ]
 
 while True:
     if overall_status == "ACTION REQUIRED !":
-        user_input=input("\nTell me your choice:\n")
-        if user_input not in [ "YES","Yes","yes" , "NO","No","no", "y" , "n"]:
+        sample=seconds*sample_rate
+
+        print("\nSPEAK NOW..\n")
+
+        audio=sd.rec(sample,samplerate=sample_rate,channels=1)
+        sd.wait()
+        audio=audio.flatten()
+
+        print("\n RECORDING FINISHES.\n")
+
+        print("\nTRANSCRIBING..\n")
+
+        result=model.transcribe(audio)
+
+        print("\n  YOU SAID : ",result["text"])
+
+        user_input=result["text"].strip().lower()
+        if user_input not in ["yes","no"]:
             print("\n please tell me clearly , YES or NO")
             continue
-        elif user_input.lower() == "yes" or user_input.lower()=="y":
+        elif "yes" in user_input:
             if highest_ram_process in allowed_apps:
                 if psutil.pid_exists(rammid):
                     process=psutil.Process(rammid)
@@ -253,7 +274,9 @@ while True:
             else:
                 print("not allowed")
                 break
-        else:
-            print("ok ")
+        elif "no" in user_input:
             break
+        else:
+            print("\nplease say clearly\n")
+            continue
             
